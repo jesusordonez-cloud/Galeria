@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -114,17 +115,18 @@ public final class ChannelAdapter extends BaseAdapter {
         rootParams.setMargins(dp(2), dp(4), dp(2), dp(4));
         root.setLayoutParams(rootParams);
 
-        LinearLayout logoWrap = new LinearLayout(context);
-        logoWrap.setGravity(Gravity.CENTER);
+        FrameLayout logoWrap = new FrameLayout(context);
         logoWrap.setBackground(makeBackground(Color.rgb(18, 42, 66), 14));
 
         ImageView logo = new ImageView(context);
         logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        logoWrap.addView(logo, new LinearLayout.LayoutParams(dp(54), dp(54)));
+        FrameLayout.LayoutParams logoInner = new FrameLayout.LayoutParams(dp(54), dp(54), Gravity.CENTER);
+        logoWrap.addView(logo, logoInner);
 
         TextView fallback = text("", 16, Color.rgb(24, 169, 255), true);
         fallback.setGravity(Gravity.CENTER);
-        logoWrap.addView(fallback, new LinearLayout.LayoutParams(dp(54), dp(54)));
+        FrameLayout.LayoutParams fallbackInner = new FrameLayout.LayoutParams(dp(54), dp(54), Gravity.CENTER);
+        logoWrap.addView(fallback, fallbackInner);
 
         LinearLayout.LayoutParams logoParams = new LinearLayout.LayoutParams(dp(58), dp(58));
         logoParams.setMarginEnd(dp(12));
