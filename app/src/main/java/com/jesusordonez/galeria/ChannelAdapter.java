@@ -78,7 +78,7 @@ public final class ChannelAdapter extends BaseAdapter {
         boolean selected = selectedKey.equals(channel.key());
 
         row.root.setBackground(makeBackground(
-                selected ? Color.rgb(13, 53, 84) : Color.rgb(10, 22, 36), 18));
+                selected ? Color.argb(220, 12, 78, 120) : Color.argb(150, 10, 30, 47), 20));
 
         row.name.setText(channel.name);
         row.group.setText(channel.group);
@@ -91,7 +91,7 @@ public final class ChannelAdapter extends BaseAdapter {
 
         row.logo.setTag(channel.logo);
         row.logo.setImageDrawable(null);
-        row.logo.setBackground(makeBackground(Color.rgb(18, 42, 66), 14));
+        row.logo.setBackground(makeBackground(Color.argb(185, 18, 55, 78), 15));
 
         if (!channel.logo.trim().isEmpty()) {
             loadLogo(channel.logo, row.logo);
@@ -108,10 +108,10 @@ public final class ChannelAdapter extends BaseAdapter {
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.HORIZONTAL);
         root.setGravity(Gravity.CENTER_VERTICAL);
-        root.setPadding(dp(11), dp(10), dp(10), dp(10));
+        root.setPadding(dp(12), dp(11), dp(11), dp(11));
 
         LinearLayout.LayoutParams rootParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(86));
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(96));
         rootParams.setMargins(dp(2), dp(4), dp(2), dp(4));
         root.setLayoutParams(rootParams);
 
@@ -136,13 +136,13 @@ public final class ChannelAdapter extends BaseAdapter {
         textBox.setOrientation(LinearLayout.VERTICAL);
         textBox.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView name = text("", 15, Color.WHITE, true);
+        TextView name = text("", 17, Color.WHITE, true);
         name.setMaxLines(1);
 
-        TextView group = text("", 11, Color.rgb(148, 163, 184), false);
+        TextView group = text("", 13, Color.rgb(180, 201, 219), false);
         group.setMaxLines(1);
 
-        TextView live = text("EN VIVO", 9, Color.rgb(74, 222, 128), true);
+        TextView live = text("EN VIVO", 10, Color.rgb(74, 222, 128), true);
         live.setPadding(0, dp(3), 0, 0);
 
         textBox.addView(name);
@@ -214,6 +214,7 @@ public final class ChannelAdapter extends BaseAdapter {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(color);
         drawable.setCornerRadius(dp(radiusDp));
+        drawable.setStroke(dp(1), Color.argb(85, 74, 183, 236));
         return drawable;
     }
 
