@@ -158,7 +158,7 @@ $("#choose").onclick=$("#add").onclick=function(){$("#sheet").classList.remove("
 $("#picker").onchange=function(e){addFiles(e.target.files);e.target.value=""};
 $("#demo").onclick=demo;$("#prev").onclick=function(){go(cur-1)};$("#next").onclick=function(){go(cur+1)};
 $("#full").onclick=openFull;$("#close").onclick=closeFull;$("#lightbox").onclick=function(e){if(e.target.id==="lightbox")closeFull()};
-$("#fav").onclick=function(){var p=view[cur];if(!p)return;if(favs.has(p.id))favs.delete(p.id);else favs.add(p.id);localStorage.setItem("gal-favs",JSON.stringify([].slice.call(favs)));renderInfo()};
+$("#fav").onclick=function(){var p=view[cur];if(!p)return;if(favs.has(p.id))favs.delete(p.id);else favs.add(p.id);localStorage.setItem("gal-favs",JSON.stringify(Array.from(favs)));renderInfo()};
 $("#remove").onclick=function(){var p=view[cur];if(!p)return;if(!p.demo)URL.revokeObjectURL(p.url);photos=photos.filter(function(x){return x.id!==p.id});render();toast("Foto quitada")};
 $("#clear").onclick=function(){photos.forEach(function(p){if(!p.demo)URL.revokeObjectURL(p.url)});photos=[];cur=0;$("#sheet").classList.remove("on");render();toast("Galería vacía")};
 $("#menuBtn").onclick=function(){$("#sheet").classList.add("on")};$("#sheet").onclick=function(e){if(e.target.id==="sheet")$("#sheet").classList.remove("on")};
