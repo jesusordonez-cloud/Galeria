@@ -26,7 +26,6 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,17 +52,16 @@ import java.util.TreeSet;
 
 @OptIn(markerClass = UnstableApi.class)
 public class MainActivity extends Activity {
-    private static final int BG = Color.rgb(4, 10, 18);
-    private static final int SURFACE = Color.rgb(10, 22, 36);
-    private static final int SURFACE_2 = Color.rgb(14, 32, 50);
-    private static final int SURFACE_3 = Color.rgb(18, 42, 66);
-    private static final int BLUE = Color.rgb(24, 169, 255);
-    private static final int BLUE_DARK = Color.rgb(7, 124, 242);
-    private static final int MUTED = Color.rgb(168, 191, 212);
-    private static final int GREEN = Color.rgb(34, 197, 94);
-    private static final int RED = Color.rgb(225, 29, 72);
+    private static final int BG = Color.rgb(3, 9, 16);
+    private static final int PANEL = Color.rgb(8, 26, 43);
+    private static final int PANEL_2 = Color.rgb(10, 43, 67);
+    private static final int BLUE = Color.rgb(22, 174, 255);
+    private static final int BLUE_DARK = Color.rgb(5, 126, 242);
+    private static final int MUTED = Color.rgb(180, 201, 219);
+    private static final int GREEN = Color.rgb(74, 222, 128);
+    private static final int RED = Color.rgb(239, 43, 63);
 
-    private static final String[] SCOPE_LABELS = {"🇲🇽  México", "◎  Español", "◎  Mundo"};
+    private static final String[] SCOPE_LABELS = {"🇲🇽  México", "Español", "Mundo"};
     private static final String[] SCOPE_URLS = {
             "https://iptv-org.github.io/iptv/countries/mx.m3u",
             "https://iptv-org.github.io/iptv/languages/spa.m3u",
@@ -72,10 +70,8 @@ public class MainActivity extends Activity {
 
     private ExoPlayer player;
     private PlayerView playerView;
-    private LinearLayout headerView;
-    private LinearLayout bodyView;
+    private LinearLayout headerContent;
     private LinearLayout featuredRow;
-    private LinearLayout scopeRow;
     private Button[] scopeButtons;
     private EditText searchInput;
     private Spinner categorySpinner;
@@ -88,6 +84,8 @@ public class MainActivity extends Activity {
     private TextView favoriteAction;
     private ProgressBar progressBar;
     private ListView listView;
+    private LinearLayout bottomNav;
+    private LinearLayout playerCard;
 
     private final M3uRepository m3uRepository = new M3uRepository();
     private final EpgRepository epgRepository = new EpgRepository();
@@ -128,8 +126,12 @@ public class MainActivity extends Activity {
 
         channelAdapter = new ChannelAdapter(this, favorites, this::toggleFavorite);
         listView.setAdapter(channelAdapter);
-        listView.setOnItemClickListener((parent, view, position, id) ->
-                playChannel(channelAdapter.getItem(position)));
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            int adapterPosition = position - listView.getHeaderViewsCount();
+            if (adapterPosition >= 0 && adapterPosition < channelAdapter.getCount()) {
+                playChannel(channelAdapter.getItem(adapterPosition));
+            }
+        });
 
         setupInteractions();
         loadScope(0);
@@ -138,7 +140,7 @@ public class MainActivity extends Activity {
     private void buildUi() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(BG);
+        root.setBackground(appBackground());
 
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             int top;
@@ -155,42 +157,68 @@ public class MainActivity extends Activity {
             return insets;
         });
 
-        headerView = new LinearLayout(this);
-        headerView.setOrientation(LinearLayout.HORIZONTAL);
-        headerView.setGravity(Gravity.CENTER_VERTICAL);
-        headerView.setPadding(dp(16), dp(12), dp(16), dp(8));
+        listView = new ListView(this);
+        listView.setDivider(null);
+        listView.setDividerHeight(0);
+        listView.setCacheColorHint(Color.TRANSPARENT);
+        listView.setBackgroundColor(Color.TRANSPARENT);
+        listView.setClipToPadding(false);
+        listView.setPadding(dp(10), 0, dp(10), dp(16));
+
+        headerContent = buildHeaderContent();
+        listView.addHeaderView(headerContent, null, false);
+
+        root.addView(listView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        bottomNav = buildBottomNav();
+        root.addView(bottomNav, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(68)));
+
+        setContentView(root);
+    }
+
+    private LinearLayout buildHeaderContent() {
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setPadding(dp(2), dp(10), dp(2), dp(8));
+
+        LinearLayout brandRow = new LinearLayout(this);
+        brandRow.setGravity(Gravity.CENTER_VERTICAL);
+        brandRow.setPadding(dp(8), dp(3), dp(8), dp(8));
 
         LinearLayout brand = new LinearLayout(this);
         brand.setOrientation(LinearLayout.VERTICAL);
 
-        TextView brandTitle = text("TV EN VIVO", 25, Color.WHITE, true);
-        brandTitle.setLetterSpacing(-0.03f);
-        TextView brandSub = text("Tu televisión, en cualquier lugar", 11, MUTED, false);
+        TextView brandTitle = text("TV EN VIVO", 27, Color.WHITE, true);
+        brandTitle.setLetterSpacing(-0.02f);
+        TextView brandSub = text("Tu televisión, en cualquier lugar", 13, MUTED, false);
+        brandSub.setPadding(0, dp(2), 0, 0);
 
         brand.addView(brandTitle);
         brand.addView(brandSub);
-        headerView.addView(brand, new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        brandRow.addView(brand, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         LinearLayout connection = new LinearLayout(this);
         connection.setGravity(Gravity.CENTER_VERTICAL);
-        connection.setPadding(dp(10), dp(7), dp(10), dp(7));
-        connection.setBackground(rounded(SURFACE_2, 99));
+        connection.setPadding(dp(11), dp(7), dp(11), dp(7));
+        connection.setBackground(glassPill(false));
 
         TextView dot = text("●", 12, GREEN, true);
-        connectionText = text(" Online", 11, Color.WHITE, true);
+        connectionText = text("  Online", 12, Color.WHITE, true);
         connection.addView(dot);
         connection.addView(connectionText);
-        headerView.addView(connection);
+        brandRow.addView(connection);
 
-        root.addView(headerView);
+        header.addView(brandRow);
 
         HorizontalScrollView scopes = new HorizontalScrollView(this);
         scopes.setHorizontalScrollBarEnabled(false);
         scopes.setClipToPadding(false);
-        scopes.setPadding(dp(12), dp(6), dp(12), dp(10));
+        scopes.setPadding(dp(4), dp(4), dp(4), dp(9));
 
-        scopeRow = new LinearLayout(this);
+        LinearLayout scopeRow = new LinearLayout(this);
         scopeRow.setOrientation(LinearLayout.HORIZONTAL);
         scopeButtons = new Button[4];
 
@@ -215,31 +243,28 @@ public class MainActivity extends Activity {
         scopeRow.addView(favScope);
 
         scopes.addView(scopeRow);
-        root.addView(scopes, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(62)));
+        header.addView(scopes, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(58)));
 
-        LinearLayout heroWrap = new LinearLayout(this);
-        heroWrap.setOrientation(LinearLayout.VERTICAL);
-        heroWrap.setPadding(dp(12), 0, dp(12), 0);
-
-        LinearLayout playerCard = new LinearLayout(this);
+        playerCard = new LinearLayout(this);
         playerCard.setOrientation(LinearLayout.VERTICAL);
-        playerCard.setBackground(rounded(Color.BLACK, 20));
+        playerCard.setPadding(dp(1), dp(1), dp(1), dp(1));
+        playerCard.setBackground(glassCard(22));
         playerCard.setClipToOutline(true);
+        playerCard.setElevation(dp(8));
 
         LinearLayout liveTop = new LinearLayout(this);
         liveTop.setGravity(Gravity.CENTER_VERTICAL);
-        liveTop.setPadding(dp(12), dp(9), dp(12), dp(7));
-        liveTop.setBackgroundColor(Color.rgb(7, 17, 28));
+        liveTop.setPadding(dp(12), dp(10), dp(12), dp(9));
+        liveTop.setBackground(glassStrip());
 
-        TextView liveBadge = text("●  EN VIVO", 11, Color.WHITE, true);
+        TextView liveBadge = text("●  EN VIVO", 12, Color.WHITE, true);
         liveBadge.setPadding(dp(9), dp(5), dp(9), dp(5));
         liveBadge.setBackground(rounded(RED, 99));
         liveTop.addView(liveBadge);
 
-        TextView liveHint = text("  Streaming", 11, MUTED, false);
-        liveTop.addView(liveHint);
-
+        TextView stream = text("   Streaming en directo", 12, MUTED, false);
+        liveTop.addView(stream);
         playerCard.addView(liveTop);
 
         playerView = new PlayerView(this);
@@ -249,21 +274,20 @@ public class MainActivity extends Activity {
         playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
         playerView.setBackgroundColor(Color.BLACK);
         playerView.setKeepScreenOn(true);
-        playerNormalHeight = dp(205);
+        playerNormalHeight = dp(220);
         playerCard.addView(playerView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, playerNormalHeight));
 
-        heroWrap.addView(playerCard);
-        root.addView(heroWrap);
-
-        bodyView = new LinearLayout(this);
-        bodyView.setOrientation(LinearLayout.VERTICAL);
-        bodyView.setPadding(dp(12), dp(10), dp(12), 0);
+        LinearLayout.LayoutParams playerParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        playerParams.setMargins(dp(4), 0, dp(4), dp(10));
+        header.addView(playerCard, playerParams);
 
         LinearLayout programCard = new LinearLayout(this);
         programCard.setOrientation(LinearLayout.VERTICAL);
-        programCard.setPadding(dp(15), dp(13), dp(15), dp(12));
-        programCard.setBackground(rounded(SURFACE, 18));
+        programCard.setPadding(dp(16), dp(15), dp(16), dp(14));
+        programCard.setBackground(glassCard(20));
+        programCard.setElevation(dp(5));
 
         LinearLayout channelHeader = new LinearLayout(this);
         channelHeader.setGravity(Gravity.CENTER_VERTICAL);
@@ -271,48 +295,52 @@ public class MainActivity extends Activity {
         LinearLayout channelText = new LinearLayout(this);
         channelText.setOrientation(LinearLayout.VERTICAL);
 
-        channelTitle = text("Selecciona un canal", 20, Color.WHITE, true);
-        channelGroup = text("TV en Vivo", 12, BLUE, true);
+        channelTitle = text("Selecciona un canal", 22, Color.WHITE, true);
+        channelGroup = text("TV en Vivo", 14, BLUE, true);
+        channelGroup.setPadding(0, dp(2), 0, 0);
         channelText.addView(channelTitle);
         channelText.addView(channelGroup);
         channelHeader.addView(channelText, new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        TextView hdBadge = text("HD", 11, Color.WHITE, true);
-        hdBadge.setPadding(dp(8), dp(5), dp(8), dp(5));
-        hdBadge.setBackground(rounded(SURFACE_3, 7));
+        TextView hdBadge = text("HD", 12, Color.WHITE, true);
+        hdBadge.setPadding(dp(9), dp(6), dp(9), dp(6));
+        hdBadge.setBackground(glassPill(false));
         channelHeader.addView(hdBadge);
 
         programCard.addView(channelHeader);
 
-        TextView nowLabel = text("AHORA", 10, Color.WHITE, true);
-        nowLabel.setPadding(dp(7), dp(4), dp(7), dp(4));
-        nowLabel.setBackground(rounded(RED, 6));
+        TextView nowLabel = text("AHORA", 11, Color.WHITE, true);
+        nowLabel.setPadding(dp(8), dp(4), dp(8), dp(4));
+        nowLabel.setBackground(rounded(RED, 7));
         LinearLayout.LayoutParams nowLabelParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        nowLabelParams.topMargin = dp(12);
+        nowLabelParams.topMargin = dp(13);
         programCard.addView(nowLabel, nowLabelParams);
 
-        nowText = text("Selecciona un canal para comenzar", 14, Color.WHITE, false);
-        nowText.setPadding(0, dp(6), 0, 0);
+        nowText = text("Selecciona un canal para comenzar", 16, Color.WHITE, false);
+        nowText.setPadding(0, dp(7), 0, 0);
         programCard.addView(nowText);
 
         View progressTrack = new View(this);
         progressTrack.setBackground(rounded(BLUE, 99));
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
-                dp(150), dp(4));
-        progressParams.topMargin = dp(8);
-        progressParams.bottomMargin = dp(8);
+                dp(190), dp(5));
+        progressParams.topMargin = dp(9);
+        progressParams.bottomMargin = dp(9);
         programCard.addView(progressTrack, progressParams);
 
-        nextText = text("Siguiente: —", 12, MUTED, false);
+        nextText = text("Siguiente: —", 14, MUTED, false);
         programCard.addView(nextText);
 
-        bodyView.addView(programCard);
+        LinearLayout.LayoutParams programParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        programParams.setMargins(dp(4), 0, dp(4), dp(8));
+        header.addView(programCard, programParams);
 
         LinearLayout actions = new LinearLayout(this);
         actions.setGravity(Gravity.CENTER);
-        actions.setPadding(0, dp(9), 0, dp(5));
+        actions.setPadding(dp(1), dp(2), dp(1), dp(8));
 
         favoriteAction = actionButton("☆", "Favorito");
         favoriteAction.setOnClickListener(v -> {
@@ -329,10 +357,9 @@ public class MainActivity extends Activity {
         actions.addView(favoriteAction, actionLayout());
         actions.addView(pip, actionLayout());
         actions.addView(refresh, actionLayout());
-        bodyView.addView(actions);
+        header.addView(actions);
 
-        TextView featuredTitle = sectionTitle("Canales destacados");
-        bodyView.addView(featuredTitle);
+        header.addView(sectionTitle("Canales destacados"));
 
         HorizontalScrollView featuredScroll = new HorizontalScrollView(this);
         featuredScroll.setHorizontalScrollBarEnabled(false);
@@ -340,93 +367,98 @@ public class MainActivity extends Activity {
 
         featuredRow = new LinearLayout(this);
         featuredRow.setOrientation(LinearLayout.HORIZONTAL);
-        featuredRow.setPadding(0, dp(3), dp(8), dp(6));
+        featuredRow.setPadding(dp(2), dp(4), dp(8), dp(9));
         featuredScroll.addView(featuredRow);
-        bodyView.addView(featuredScroll, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(96)));
+        header.addView(featuredScroll, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(112)));
+
+        header.addView(sectionTitle("Explorar canales"));
+
+        LinearLayout searchCard = new LinearLayout(this);
+        searchCard.setOrientation(LinearLayout.VERTICAL);
+        searchCard.setPadding(dp(10), dp(10), dp(10), dp(10));
+        searchCard.setBackground(glassCard(18));
 
         LinearLayout searchRow = new LinearLayout(this);
         searchRow.setGravity(Gravity.CENTER_VERTICAL);
-        searchRow.setPadding(0, dp(5), 0, dp(5));
 
         searchInput = new EditText(this);
         searchInput.setSingleLine(true);
         searchInput.setHint("⌕  Buscar canal");
-        searchInput.setHintTextColor(Color.rgb(105, 130, 154));
+        searchInput.setHintTextColor(Color.rgb(126, 153, 176));
         searchInput.setTextColor(Color.WHITE);
-        searchInput.setTextSize(14);
+        searchInput.setTextSize(16);
         searchInput.setPadding(dp(14), 0, dp(14), 0);
-        searchInput.setBackground(rounded(SURFACE, 14));
-        searchRow.addView(searchInput, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        searchInput.setBackground(glassInput());
+        searchRow.addView(searchInput, new LinearLayout.LayoutParams(0, dp(50), 1f));
 
         categorySpinner = new Spinner(this);
         categorySpinner.setAdapter(spinnerAdapter(new String[]{"Todos"}));
-        LinearLayout.LayoutParams catParams = new LinearLayout.LayoutParams(dp(118), dp(46));
+        LinearLayout.LayoutParams catParams = new LinearLayout.LayoutParams(dp(124), dp(50));
         catParams.setMarginStart(dp(8));
         searchRow.addView(categorySpinner, catParams);
-        bodyView.addView(searchRow);
+        searchCard.addView(searchRow);
 
         LinearLayout statusRow = new LinearLayout(this);
         statusRow.setGravity(Gravity.CENTER_VERTICAL);
-        statusRow.setPadding(dp(3), dp(4), dp(3), dp(4));
+        statusRow.setPadding(dp(4), dp(10), dp(4), 0);
 
-        TextView allTitle = sectionTitle("Todos los canales");
-        allTitle.setTextSize(17);
+        TextView allTitle = text("Todos los canales", 18, Color.WHITE, true);
         statusRow.addView(allTitle, new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        statusText = text("Cargando…", 11, MUTED, false);
+        statusText = text("Cargando…", 13, MUTED, false);
         statusRow.addView(statusText);
 
         progressBar = new ProgressBar(this);
         progressBar.setIndeterminate(true);
-        LinearLayout.LayoutParams pb = new LinearLayout.LayoutParams(dp(24), dp(24));
-        pb.setMarginStart(dp(5));
+        LinearLayout.LayoutParams pb = new LinearLayout.LayoutParams(dp(26), dp(26));
+        pb.setMarginStart(dp(6));
         statusRow.addView(progressBar, pb);
-        bodyView.addView(statusRow);
 
-        listView = new ListView(this);
-        listView.setDivider(null);
-        listView.setDividerHeight(0);
-        listView.setCacheColorHint(Color.TRANSPARENT);
-        listView.setBackgroundColor(Color.TRANSPARENT);
-        bodyView.addView(listView, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        searchCard.addView(statusRow);
 
-        root.addView(bodyView, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        searchParams.setMargins(dp(4), 0, dp(4), dp(10));
+        header.addView(searchCard, searchParams);
 
-        LinearLayout bottomNav = new LinearLayout(this);
-        bottomNav.setGravity(Gravity.CENTER);
-        bottomNav.setPadding(dp(8), dp(5), dp(8), dp(5));
-        bottomNav.setBackgroundColor(Color.rgb(5, 15, 25));
+        return header;
+    }
+
+    private LinearLayout buildBottomNav() {
+        LinearLayout nav = new LinearLayout(this);
+        nav.setGravity(Gravity.CENTER);
+        nav.setPadding(dp(8), dp(5), dp(8), dp(5));
+        nav.setBackground(glassNav());
 
         TextView home = bottomTab("⌂", "Inicio", true);
         TextView channels = bottomTab("▤", "Canales", false);
-        TextView guide = bottomTab("▦", "Guía", false);
+        TextView guide = bottomTab("▦", "Guía TV", false);
         TextView fav = bottomTab("★", "Favoritos", false);
 
         home.setOnClickListener(v -> listView.smoothScrollToPosition(0));
-        channels.setOnClickListener(v -> searchInput.requestFocus());
+        channels.setOnClickListener(v -> {
+            listView.smoothScrollToPosition(0);
+            searchInput.requestFocus();
+        });
         guide.setOnClickListener(v -> Toast.makeText(this,
-                selectedChannel == null ? "Selecciona un canal para consultar su guía."
-                        : "La guía del canal aparece debajo del reproductor.",
+                selectedChannel == null
+                        ? "Selecciona un canal para consultar su guía."
+                        : "La programación actual aparece en la tarjeta del canal.",
                 Toast.LENGTH_SHORT).show());
         fav.setOnClickListener(v -> {
             favoritesMode = true;
             updateScopeStyles();
             applyFilter();
+            listView.smoothScrollToPosition(0);
         });
 
-        bottomNav.addView(home, bottomLayout());
-        bottomNav.addView(channels, bottomLayout());
-        bottomNav.addView(guide, bottomLayout());
-        bottomNav.addView(fav, bottomLayout());
-
-        root.addView(bottomNav, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(58)));
-
-        setContentView(root);
+        nav.addView(home, bottomLayout());
+        nav.addView(channels, bottomLayout());
+        nav.addView(guide, bottomLayout());
+        nav.addView(fav, bottomLayout());
+        return nav;
     }
 
     private void setupInteractions() {
@@ -454,14 +486,14 @@ public class MainActivity extends Activity {
 
         if (!hasInternet()) {
             statusText.setText("Sin conexión");
-            connectionText.setText(" Offline");
+            connectionText.setText("  Offline");
             progressBar.setVisibility(View.GONE);
             Toast.makeText(this, "Necesitas Internet para cargar y reproducir TV.",
                     Toast.LENGTH_LONG).show();
             return;
         }
 
-        connectionText.setText(" Online");
+        connectionText.setText("  Online");
         progressBar.setVisibility(View.VISIBLE);
         statusText.setText("Actualizando…");
         searchInput.setText("");
@@ -507,34 +539,34 @@ public class MainActivity extends Activity {
 
     private void buildFeatured(List<Channel> channels) {
         featuredRow.removeAllViews();
-        int count = Math.min(8, channels.size());
+        int count = Math.min(10, channels.size());
         for (int i = 0; i < count; i++) {
             Channel channel = channels.get(i);
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
             card.setGravity(Gravity.CENTER);
-            card.setPadding(dp(9), dp(8), dp(9), dp(7));
-            card.setBackground(rounded(SURFACE, 15));
+            card.setPadding(dp(10), dp(9), dp(10), dp(8));
+            card.setBackground(glassCard(16));
             card.setClickable(true);
+            card.setElevation(dp(3));
 
-            String initials = initials(channel.name);
-            TextView logo = text(initials, 18, BLUE, true);
+            TextView logo = text(initials(channel.name), 19, BLUE, true);
             logo.setGravity(Gravity.CENTER);
-            logo.setBackground(rounded(SURFACE_3, 11));
-            card.addView(logo, new LinearLayout.LayoutParams(dp(46), dp(42)));
+            logo.setBackground(glassPill(false));
+            card.addView(logo, new LinearLayout.LayoutParams(dp(50), dp(46)));
 
-            TextView name = text(channel.name, 11, Color.WHITE, true);
+            TextView name = text(channel.name, 12, Color.WHITE, true);
             name.setGravity(Gravity.CENTER);
             name.setMaxLines(1);
             LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(
-                    dp(94), ViewGroup.LayoutParams.WRAP_CONTENT);
-            nameParams.topMargin = dp(5);
+                    dp(104), ViewGroup.LayoutParams.WRAP_CONTENT);
+            nameParams.topMargin = dp(6);
             card.addView(name, nameParams);
 
             card.setOnClickListener(v -> playChannel(channel));
             LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
-                    dp(105), dp(84));
-            cardParams.setMarginEnd(dp(8));
+                    dp(116), dp(96));
+            cardParams.setMarginEnd(dp(9));
             featuredRow.addView(card, cardParams);
         }
     }
@@ -542,8 +574,12 @@ public class MainActivity extends Activity {
     private String initials(String name) {
         if (name == null || name.trim().isEmpty()) return "TV";
         String[] parts = name.trim().split("\\s+");
-        if (parts.length == 1) return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase(Locale.ROOT);
-        return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase(Locale.ROOT);
+        if (parts.length == 1) {
+            return parts[0].substring(0, Math.min(2, parts[0].length()))
+                    .toUpperCase(Locale.ROOT);
+        }
+        return (parts[0].substring(0, 1) + parts[1].substring(0, 1))
+                .toUpperCase(Locale.ROOT);
     }
 
     private void applyFilter() {
@@ -577,13 +613,14 @@ public class MainActivity extends Activity {
         channelAdapter.setSelected(channel);
 
         channelTitle.setText(channel.name);
-        channelGroup.setText(channel.group + "  ·  " + SCOPE_LABELS[currentScope].replace("🇲🇽  ", "").replace("◎  ", ""));
+        channelGroup.setText(channel.group + "  ·  "
+                + SCOPE_LABELS[currentScope].replace("🇲🇽  ", ""));
         nowText.setText("Consultando programación…");
         nextText.setText("Siguiente: —");
         updateFavoriteAction();
 
         String userAgent = channel.userAgent.trim().isEmpty()
-                ? "Mozilla/5.0 (Linux; Android) TV-en-Vivo/3.0"
+                ? "Mozilla/5.0 (Linux; Android) TV-en-Vivo/4.0"
                 : channel.userAgent;
 
         DefaultHttpDataSource.Factory httpFactory = new DefaultHttpDataSource.Factory()
@@ -608,6 +645,8 @@ public class MainActivity extends Activity {
         player.setMediaSource(mediaSourceFactory.createMediaSource(MediaItem.fromUri(channel.url)));
         player.prepare();
         player.setPlayWhenReady(true);
+
+        listView.smoothScrollToPosition(0);
 
         final String key = channel.key();
         epgRepository.request(channel.id, info -> runOnUiThread(() -> {
@@ -654,13 +693,14 @@ public class MainActivity extends Activity {
         if (scopeButtons == null) return;
         for (int i = 0; i < scopeButtons.length; i++) {
             boolean active = favoritesMode ? i == 3 : i == currentScope;
-            scopeButtons[i].setBackground(rounded(active ? BLUE_DARK : SURFACE, 99));
+            scopeButtons[i].setBackground(active ? selectedChip() : glassPill(false));
             scopeButtons[i].setTextColor(active ? Color.WHITE : MUTED);
         }
     }
 
     private boolean hasInternet() {
-        ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager manager =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (manager == null) return false;
         Network network = manager.getActiveNetwork();
         if (network == null) return false;
@@ -671,13 +711,15 @@ public class MainActivity extends Activity {
 
     private void enterPip() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            Toast.makeText(this, "Mini TV requiere Android 8 o superior.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Mini TV requiere Android 8 o superior.",
+                    Toast.LENGTH_SHORT).show();
             return;
         }
         if (selectedChannel == null) {
             Toast.makeText(this, "Primero reproduce un canal.", Toast.LENGTH_SHORT).show();
             return;
         }
+        listView.smoothScrollToPosition(0);
         PictureInPictureParams params = new PictureInPictureParams.Builder()
                 .setAspectRatio(new Rational(16, 9))
                 .build();
@@ -695,32 +737,25 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode,
-                                              Configuration newConfig) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
-        headerView.setVisibility(isInPictureInPictureMode ? View.GONE : View.VISIBLE);
-        bodyView.setVisibility(isInPictureInPictureMode ? View.GONE : View.VISIBLE);
-        if (scopeRow != null && scopeRow.getParent() != null) {
-            View parent = (View) scopeRow.getParent().getParent();
-            if (parent != null) parent.setVisibility(isInPictureInPictureMode ? View.GONE : View.VISIBLE);
+    public void onPictureInPictureModeChanged(boolean inPip, Configuration newConfig) {
+        super.onPictureInPictureModeChanged(inPip, newConfig);
+        bottomNav.setVisibility(inPip ? View.GONE : View.VISIBLE);
+        playerView.setUseController(!inPip);
+        if (inPip) {
+            listView.smoothScrollToPosition(0);
         }
-        ViewGroup.LayoutParams params = playerView.getLayoutParams();
-        params.height = isInPictureInPictureMode
-                ? ViewGroup.LayoutParams.MATCH_PARENT : playerNormalHeight;
-        playerView.setLayoutParams(params);
-        playerView.setUseController(!isInPictureInPictureMode);
     }
 
     private Button scopeChip(String label) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextSize(13);
+        button.setTextSize(14);
         button.setAllCaps(false);
         button.setTextColor(MUTED);
-        button.setPadding(dp(15), 0, dp(15), 0);
+        button.setPadding(dp(16), 0, dp(16), 0);
         button.setMinHeight(0);
         button.setMinWidth(0);
-        button.setBackground(rounded(SURFACE, 99));
+        button.setBackground(glassPill(false));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(42));
         params.setMarginEnd(dp(8));
@@ -729,23 +764,23 @@ public class MainActivity extends Activity {
     }
 
     private TextView actionButton(String icon, String label) {
-        TextView view = text(icon + "\n" + label, 12, Color.WHITE, true);
+        TextView view = text(icon + "\n" + label, 14, Color.WHITE, true);
         view.setGravity(Gravity.CENTER);
-        view.setPadding(dp(8), dp(7), dp(8), dp(7));
-        view.setBackground(rounded(SURFACE, 14));
+        view.setPadding(dp(8), dp(8), dp(8), dp(8));
+        view.setBackground(glassCard(15));
         return view;
     }
 
     private LinearLayout.LayoutParams actionLayout() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(58), 1f);
-        params.setMargins(dp(3), 0, dp(3), 0);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(68), 1f);
+        params.setMargins(dp(4), 0, dp(4), 0);
         return params;
     }
 
     private TextView bottomTab(String icon, String label, boolean active) {
-        TextView view = text(icon + "\n" + label, 10, active ? BLUE : MUTED, active);
+        TextView view = text(icon + "\n" + label, 12, active ? BLUE : MUTED, active);
         view.setGravity(Gravity.CENTER);
-        view.setLineSpacing(0, 0.9f);
+        view.setLineSpacing(0, 1.0f);
         return view;
     }
 
@@ -754,8 +789,8 @@ public class MainActivity extends Activity {
     }
 
     private TextView sectionTitle(String value) {
-        TextView view = text(value, 18, Color.WHITE, true);
-        view.setPadding(dp(2), dp(5), 0, dp(3));
+        TextView view = text(value, 20, Color.WHITE, true);
+        view.setPadding(dp(7), dp(8), 0, dp(5));
         return view;
     }
 
@@ -771,10 +806,10 @@ public class MainActivity extends Activity {
                 if (view instanceof TextView) {
                     TextView text = (TextView) view;
                     text.setTextColor(Color.WHITE);
-                    text.setTextSize(12);
+                    text.setTextSize(14);
                     text.setGravity(Gravity.CENTER);
-                    text.setPadding(dp(9), 0, dp(7), 0);
-                    text.setBackground(rounded(SURFACE, 14));
+                    text.setPadding(dp(10), 0, dp(8), 0);
+                    text.setBackground(glassInput());
                 }
                 return view;
             }
@@ -785,9 +820,9 @@ public class MainActivity extends Activity {
                 if (view instanceof TextView) {
                     TextView text = (TextView) view;
                     text.setTextColor(Color.WHITE);
-                    text.setTextSize(14);
-                    text.setPadding(dp(14), dp(13), dp(14), dp(13));
-                    text.setBackgroundColor(SURFACE_2);
+                    text.setTextSize(15);
+                    text.setPadding(dp(14), dp(14), dp(14), dp(14));
+                    text.setBackgroundColor(PANEL);
                 }
                 return view;
             }
@@ -801,6 +836,68 @@ public class MainActivity extends Activity {
         view.setTextColor(color);
         view.setTypeface(Typeface.DEFAULT, bold ? Typeface.BOLD : Typeface.NORMAL);
         return view;
+    }
+
+    private GradientDrawable appBackground() {
+        return new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(2, 8, 14), Color.rgb(5, 24, 39), Color.rgb(2, 10, 17)});
+    }
+
+    private GradientDrawable glassCard(int radiusDp) {
+        GradientDrawable d = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{
+                        Color.argb(210, 11, 36, 58),
+                        Color.argb(150, 10, 24, 41),
+                        Color.argb(130, 16, 67, 92)
+                });
+        d.setCornerRadius(dp(radiusDp));
+        d.setStroke(dp(1), Color.argb(95, 65, 190, 255));
+        return d;
+    }
+
+    private GradientDrawable glassPill(boolean strong) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(strong
+                ? Color.argb(215, 8, 113, 215)
+                : Color.argb(150, 20, 48, 70));
+        d.setCornerRadius(dp(99));
+        d.setStroke(dp(1), Color.argb(90, 88, 193, 255));
+        return d;
+    }
+
+    private GradientDrawable selectedChip() {
+        GradientDrawable d = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{BLUE_DARK, BLUE});
+        d.setCornerRadius(dp(99));
+        d.setStroke(dp(1), Color.argb(180, 150, 225, 255));
+        return d;
+    }
+
+    private GradientDrawable glassInput() {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(Color.argb(125, 9, 31, 50));
+        d.setCornerRadius(dp(14));
+        d.setStroke(dp(1), Color.argb(75, 82, 177, 230));
+        return d;
+    }
+
+    private GradientDrawable glassStrip() {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(Color.argb(175, 4, 17, 29));
+        d.setCornerRadii(new float[]{
+                dp(21), dp(21), dp(21), dp(21), 0, 0, 0, 0
+        });
+        return d;
+    }
+
+    private GradientDrawable glassNav() {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(Color.argb(235, 4, 19, 31));
+        d.setStroke(dp(1), Color.argb(75, 68, 172, 225));
+        return d;
     }
 
     private GradientDrawable rounded(int color, int radiusDp) {
