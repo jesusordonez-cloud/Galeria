@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build TV Android APK
 
 on:
   push:
@@ -32,12 +32,12 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Build debug APK
+      - name: Build TV APK
         run: gradle assembleDebug --stacktrace
 
-      - name: Upload APK
+      - name: Upload TV APK
         uses: actions/upload-artifact@v4
         with:
-          name: Galeria-debug-apk
+          name: TV-en-Vivo-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
