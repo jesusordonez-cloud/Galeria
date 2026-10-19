@@ -1,8 +1,8 @@
-name: Build TV Android APK
+name: Build Modern TV Android APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "android-mobile-modern" ]
   workflow_dispatch:
 
 permissions:
@@ -32,12 +32,12 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Build TV APK
+      - name: Build modern TV APK
         run: gradle assembleDebug --stacktrace
 
-      - name: Upload TV APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: TV-en-Vivo-debug-apk
+          name: TV-en-Vivo-modern-v3
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
