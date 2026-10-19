@@ -18,6 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -74,18 +75,30 @@ public final class ChannelAdapter extends BaseAdapter {
 
         Channel channel = getItem(position);
         boolean selected = selectedKey.equals(channel.key());
-        row.root.setBackground(makeBackground(selected ? Color.rgb(24, 48, 88) : Color.rgb(17, 24, 39), 16));
+
+        row.root.setBackground(makeBackground(
+                selected ? Color.rgb(13, 53, 84) : Color.rgb(10, 22, 36), 18));
 
         row.name.setText(channel.name);
         row.group.setText(channel.group);
+        row.live.setText(selected ? "REPRODUCIENDO" : "EN VIVO");
+        row.live.setTextColor(selected ? Color.rgb(125, 211, 252) : Color.rgb(74, 222, 128));
         row.star.setText(favorites.contains(channel.key()) ? "★" : "☆");
-        row.star.setContentDescription("Favorito: " + channel.name);
+        row.star.setTextColor(favorites.contains(channel.key())
+                ? Color.rgb(250, 204, 21) : Color.rgb(203, 213, 225));
         row.star.setOnClickListener(v -> favoriteListener.onToggle(channel));
 
         row.logo.setTag(channel.logo);
         row.logo.setImageDrawable(null);
-        row.logo.setBackground(makeBackground(Color.rgb(30, 41, 59), 13));
-        if (!channel.logo.isBlank()) loadLogo(channel.logo, row.logo);
+        row.logo.setBackground(makeBackground(Color.rgb(18, 42, 66), 14));
+
+        if (!channel.logo.trim().isEmpty()) {
+            loadLogo(channel.logo, row.logo);
+            row.fallback.setVisibility(View.GONE);
+        } else {
+            row.fallback.setVisibility(View.VISIBLE);
+            row.fallback.setText(initials(channel.name));
+        }
 
         return convertView;
     }
@@ -94,47 +107,55 @@ public final class ChannelAdapter extends BaseAdapter {
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.HORIZONTAL);
         root.setGravity(Gravity.CENTER_VERTICAL);
-        root.setPadding(dp(12), dp(9), dp(10), dp(9));
+        root.setPadding(dp(11), dp(10), dp(10), dp(10));
+
         LinearLayout.LayoutParams rootParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(82));
-        rootParams.setMargins(dp(8), dp(4), dp(8), dp(4));
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(86));
+        rootParams.setMargins(dp(2), dp(4), dp(2), dp(4));
         root.setLayoutParams(rootParams);
+
+        LinearLayout logoWrap = new LinearLayout(context);
+        logoWrap.setGravity(Gravity.CENTER);
+        logoWrap.setBackground(makeBackground(Color.rgb(18, 42, 66), 14));
 
         ImageView logo = new ImageView(context);
         logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        logoWrap.addView(logo, new LinearLayout.LayoutParams(dp(54), dp(54)));
+
+        TextView fallback = text("", 16, Color.rgb(24, 169, 255), true);
+        fallback.setGravity(Gravity.CENTER);
+        logoWrap.addView(fallback, new LinearLayout.LayoutParams(dp(54), dp(54)));
+
         LinearLayout.LayoutParams logoParams = new LinearLayout.LayoutParams(dp(58), dp(58));
         logoParams.setMarginEnd(dp(12));
-        root.addView(logo, logoParams);
+        root.addView(logoWrap, logoParams);
 
         LinearLayout textBox = new LinearLayout(context);
         textBox.setOrientation(LinearLayout.VERTICAL);
         textBox.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView name = new TextView(context);
-        name.setTextColor(Color.WHITE);
-        name.setTextSize(16);
-        name.setMaxLines(2);
+        TextView name = text("", 15, Color.WHITE, true);
+        name.setMaxLines(1);
 
-        TextView group = new TextView(context);
-        group.setTextColor(Color.rgb(148, 163, 184));
-        group.setTextSize(12);
+        TextView group = text("", 11, Color.rgb(148, 163, 184), false);
         group.setMaxLines(1);
+
+        TextView live = text("EN VIVO", 9, Color.rgb(74, 222, 128), true);
+        live.setPadding(0, dp(3), 0, 0);
 
         textBox.addView(name);
         textBox.addView(group);
+        textBox.addView(live);
 
-        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        root.addView(textBox, textParams);
+        root.addView(textBox, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        TextView star = new TextView(context);
-        star.setTextColor(Color.rgb(250, 204, 21));
-        star.setTextSize(27);
+        TextView star = text("☆", 26, Color.rgb(203, 213, 225), false);
         star.setGravity(Gravity.CENTER);
-        star.setPadding(dp(9), dp(9), dp(9), dp(9));
-        root.addView(star, new LinearLayout.LayoutParams(dp(52), dp(52)));
+        star.setPadding(dp(8), dp(8), dp(8), dp(8));
+        root.addView(star, new LinearLayout.LayoutParams(dp(50), dp(50)));
 
-        return new Row(root, logo, name, group, star);
+        return new Row(root, logo, fallback, name, group, live, star);
     }
 
     private void loadLogo(String url, ImageView target) {
@@ -150,7 +171,7 @@ public final class ChannelAdapter extends BaseAdapter {
                 connection = (HttpURLConnection) new URL(url).openConnection();
                 connection.setConnectTimeout(7000);
                 connection.setReadTimeout(10000);
-                connection.setRequestProperty("User-Agent", "TV-en-Vivo/2.0 Android");
+                connection.setRequestProperty("User-Agent", "TV-en-Vivo/3.0 Android");
                 try (InputStream input = connection.getInputStream()) {
                     Bitmap bitmap = BitmapFactory.decodeStream(input);
                     if (bitmap != null) {
@@ -166,6 +187,25 @@ public final class ChannelAdapter extends BaseAdapter {
                 if (connection != null) connection.disconnect();
             }
         });
+    }
+
+    private String initials(String name) {
+        if (name == null || name.trim().isEmpty()) return "TV";
+        String[] parts = name.trim().split("\\s+");
+        if (parts.length == 1) {
+            return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase(Locale.ROOT);
+        }
+        return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase(Locale.ROOT);
+    }
+
+    private TextView text(String value, int size, int color, boolean bold) {
+        TextView view = new TextView(context);
+        view.setText(value);
+        view.setTextSize(size);
+        view.setTextColor(color);
+        view.setTypeface(android.graphics.Typeface.DEFAULT,
+                bold ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        return view;
     }
 
     private GradientDrawable makeBackground(int color, int radiusDp) {
@@ -186,15 +226,20 @@ public final class ChannelAdapter extends BaseAdapter {
     private static final class Row {
         final LinearLayout root;
         final ImageView logo;
+        final TextView fallback;
         final TextView name;
         final TextView group;
+        final TextView live;
         final TextView star;
 
-        Row(LinearLayout root, ImageView logo, TextView name, TextView group, TextView star) {
+        Row(LinearLayout root, ImageView logo, TextView fallback, TextView name,
+            TextView group, TextView live, TextView star) {
             this.root = root;
             this.logo = logo;
+            this.fallback = fallback;
             this.name = name;
             this.group = group;
+            this.live = live;
             this.star = star;
         }
     }
