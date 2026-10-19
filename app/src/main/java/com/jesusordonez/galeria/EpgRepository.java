@@ -216,8 +216,14 @@ public final class EpgRepository {
 
     private String readText(String url) throws Exception {
         HttpURLConnection connection = open(url);
-        try (InputStream input = connection.getInputStream()) {
-            return new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        try (InputStream input = connection.getInputStream();
+             java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            return output.toString(java.nio.charset.StandardCharsets.UTF_8.name());
         } finally {
             connection.disconnect();
         }
