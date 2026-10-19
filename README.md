@@ -1,59 +1,27 @@
-# TV en Vivo
+# TV EN VIVO · Hisense VIDAA
 
-Aplicación Android para reproducir televisión gratuita disponible públicamente por Internet.
+Aplicación Web TV diseñada para televisores Hisense con **VIDAA OS**, inspirada en la interfaz de referencia acordada: navegación lateral, recomendaciones, categorías y guía de programación.
 
-## Funciones
+## Tecnología
+VIDAA ejecuta aplicaciones web HTML5/CSS/JavaScript. Este proyecto no genera APK Android.
 
-- Reproductor nativo basado en Android Media3 / ExoPlayer.
-- Catálogo remoto de **México**, canales en **español** y catálogo **mundial**.
-- Listas actualizadas desde IPTV-org, sin necesidad de recompilar la APK.
-- Búsqueda por nombre y categoría.
-- Filtro por categorías.
-- Favoritos persistentes.
-- Logos de canales.
-- Guía EPG con programa **Ahora** y **Siguiente** cuando existe información disponible.
-- Soporte para HLS y DASH.
-- Encabezados Referer/User-Agent de listas M3U cuando están publicados.
-- Picture-in-Picture en Android 8 o superior.
-- Exclusión de categorías marcadas para adultos.
+## Publicación
+El repositorio incluye un workflow de GitHub Pages. Una vez habilitado **Settings → Pages → Source: GitHub Actions**, la URL prevista es:
 
-## Fuentes
+`https://jesusordonez-cloud.github.io/Galeria/`
 
-La aplicación no aloja señales de televisión.
+## Instalación de prueba en Hisense VIDAA
+1. Abrir el navegador de la TV.
+2. Escribir `hisense://debug`.
+3. En la plataforma de depuración capturar:
+   - App Name: `TV EN VIVO`
+   - App URL: la URL HTTPS publicada
+   - Resolution: `1080`
+   - Thumbnail/Icon: URL HTTPS de `icon.svg` (opcional)
+4. Seleccionar **INSTALL**.
+5. Salir con **Exit**, abrir **Apps** y localizar **TV EN VIVO**.
 
-Directorio de streams:
-- https://iptv-org.github.io/iptv/countries/mx.m3u
-- https://iptv-org.github.io/iptv/languages/spa.m3u
-- https://iptv-org.github.io/iptv/index.m3u
+## Control remoto
+La interfaz soporta flechas direccionales y Enter mediante navegación por foco.
 
-Índice EPG:
-- https://iptv-org.github.io/api/guides.json
-
-La disponibilidad de un canal puede cambiar, estar limitada geográficamente o depender del proveedor de la señal. La aplicación no intenta eludir DRM, autenticación, suscripciones ni restricciones de pago.
-
-## Android
-
-- applicationId: `com.jesusordonez.galeria`
-- Nombre visible: **TV en Vivo**
-- minSdk: 24
-- targetSdk / compileSdk: 36
-- Media3: 1.11.1
-- Java: 17
-
-El `applicationId` se conserva respecto a la aplicación anterior del repositorio para mantener continuidad técnica. Si Android rechaza una actualización por firma distinta, desinstala la APK anterior e instala la nueva.
-
-## Compilar
-
-GitHub Actions compila automáticamente cada cambio en `main`.
-
-También puede compilarse localmente:
-
-```bash
-gradle assembleDebug
-```
-
-APK:
-
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
+> Nota: la interfaz está preparada para conectar fuentes HLS/streaming legales y EPG. Los canales comerciales que requieran autenticación, DRM o derechos territoriales no deben agregarse mediante enlaces no autorizados.

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#06101c" />
+  <title>TV EN VIVO · Hisense VIDAA</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-tv">▣</div>
+        <div>
+          <div class="brand-title">TV EN <span>VIVO</span></div>
+          <div class="brand-subtitle">HISENSE VIDAA</div>
+        </div>
+      </div>
+
+      <nav class="side-nav" aria-label="Navegación principal">
+        <button class="nav-item active" data-section="inicio"><span>⌂</span>Inicio</button>
+        <button class="nav-item" data-section="canales"><span>▰</span>Canales</button>
+        <button class="nav-item" data-section="mexico"><span>🇲🇽</span>México</button>
+        <button class="nav-item" data-section="espanol"><span>◎</span>Español</button>
+        <button class="nav-item" data-section="mundo"><span>◎</span>Mundo</button>
+        <button class="nav-item" data-section="favoritos"><span>★</span>Favoritos</button>
+        <button class="nav-item" data-section="guia"><span>▦</span>Guía TV</button>
+        <button class="nav-item" data-section="buscar"><span>⌕</span>Buscar</button>
+        <button class="nav-item" data-section="config"><span>⚙</span>Configuración</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-info">
+          <div class="live-pill">● EN VIVO</div>
+          <div class="selected-channel">
+            <div id="selectedLogo" class="selected-logo">✦</div>
+            <div class="selected-copy">
+              <h1 id="selectedTitle">Las Estrellas HD</h1>
+              <div class="program-line"><b id="currentTimeRange">15:00 – 16:00</b> <span id="currentProgram">Noticiero En Punto</span></div>
+              <div class="progress"><div id="progressBar"></div></div>
+              <div class="program-next">Siguiente: <span id="nextProgram">16:00 – 17:00 · Telenovela: El Amor Invencible</span></div>
+              <div class="badges"><span>HD</span><span>HLS</span><span>1080p</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="clock-panel">
+          <div id="clock" class="clock">15:37</div>
+          <div class="wifi">⌁</div>
+          <div id="date" class="date">Lun 19 Oct 2026</div>
+          <div class="network">Conectado</div>
+        </div>
+      </section>
+
+      <section class="content">
+        <h2>Recomendados para ti</h2>
+        <div id="recommended" class="channel-row"></div>
+
+        <h2>Categorías</h2>
+        <div id="categories" class="category-row"></div>
+
+        <div class="guide-header">
+          <h2>Guía de programación</h2>
+          <div class="guide-times"><span>15:00</span><span>15:30</span><span>16:00</span><span>16:30</span><span>17:00</span></div>
+        </div>
+        <div id="guide" class="guide"></div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
