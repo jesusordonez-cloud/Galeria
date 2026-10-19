@@ -14,7 +14,7 @@ Aplicación Android basada en el visor de fotos 3D incluido en `galeria.zip`.
 - Demo integrada sin necesidad de cargar fotografías.
 - Versión web utilizable directamente desde `index.html`.
 
-> La función original “Analizar con Claude” dependía de APIs especiales de claude.ai. En la APK se conserva la interfaz, pero se informa que esa función no está disponible en esta versión Android.
+> La función original “Analizar con Claude” dependía de APIs especiales de claude.ai, por lo que no se incluye en la versión Android independiente.
 
 ## Proyecto Android
 
