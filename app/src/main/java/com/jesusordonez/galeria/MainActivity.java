@@ -3,6 +3,7 @@ package com.jesusordonez.galeria;
 import android.app.Activity;
 import android.app.PictureInPictureParams;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -13,6 +14,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Rational;
 import android.view.Gravity;
 import android.view.View;
@@ -367,6 +369,18 @@ public class MainActivity extends Activity {
         actions.addView(pip, actionLayout());
         actions.addView(refresh, actionLayout());
         header.addView(actions);
+
+        TextView castButton = text("📺  Proyectar a TV", 16, Color.WHITE, true);
+        castButton.setGravity(Gravity.CENTER);
+        castButton.setPadding(dp(14), dp(12), dp(14), dp(12));
+        castButton.setBackground(glassCard(16));
+        castButton.setElevation(dp(3));
+        castButton.setOnClickListener(v -> openCastSettings());
+
+        LinearLayout.LayoutParams castParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(54));
+        castParams.setMargins(dp(4), 0, dp(4), dp(10));
+        header.addView(castButton, castParams);
 
         header.addView(sectionTitle("Canales destacados"));
 
@@ -747,6 +761,36 @@ public class MainActivity extends Activity {
         NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
         return capabilities != null
                 && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
+    private void openCastSettings() {
+        try {
+            Intent castIntent = new Intent(Settings.ACTION_CAST_SETTINGS);
+            if (castIntent.resolveActivity(getPackageManager()) != null) {
+                startActivity(castIntent);
+                Toast.makeText(this,
+                        "Selecciona tu TV. En VIDAA activa Anyview Cast o Screen Mirroring.",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            Intent wirelessIntent = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
+            if (wirelessIntent.resolveActivity(getPackageManager()) != null) {
+                startActivity(wirelessIntent);
+                Toast.makeText(this,
+                        "Busca la opción Proyectar, Transmitir o Pantalla inalámbrica.",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            Toast.makeText(this,
+                    "Este teléfono no expone un panel de proyección compatible.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(this,
+                    "No fue posible abrir la función de proyección del teléfono.",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private void enterFullscreen() {
