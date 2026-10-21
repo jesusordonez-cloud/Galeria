@@ -22,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -87,6 +88,7 @@ public class MainActivity extends Activity {
     private LinearLayout bottomNav;
     private LinearLayout playerCard;
     private LinearLayout rootView;
+    private PlayerView fullscreenPlayerView;
     private boolean isFullscreen = false;
 
     private final M3uRepository m3uRepository = new M3uRepository();
@@ -754,10 +756,39 @@ public class MainActivity extends Activity {
             return;
         }
 
-        ViewGroup parent = (ViewGroup) playerView.getParent();
-        if (parent != null) parent.removeView(playerView);
-
         isFullscreen = true;
+
+        playerView.setPlayer(null);
+
+        FrameLayout fullscreenRoot = new FrameLayout(this);
+        fullscreenRoot.setBackgroundColor(Color.BLACK);
+
+        fullscreenPlayerView = new PlayerView(this);
+        fullscreenPlayerView.setBackgroundColor(Color.BLACK);
+        fullscreenPlayerView.setUseController(true);
+        fullscreenPlayerView.setControllerAutoShow(true);
+        fullscreenPlayerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
+        fullscreenPlayerView.setKeepScreenOn(true);
+        fullscreenPlayerView.setPlayer(player);
+
+        FrameLayout.LayoutParams videoParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        );
+        fullscreenRoot.addView(fullscreenPlayerView, videoParams);
+
+        TextView close = text("×", 30, Color.WHITE, true);
+        close.setGravity(Gravity.CENTER);
+        close.setBackground(glassPill(false));
+        close.setOnClickListener(v -> exitFullscreen());
+
+        FrameLayout.LayoutParams closeParams = new FrameLayout.LayoutParams(
+                dp(48), dp(48), Gravity.TOP | Gravity.END
+        );
+        closeParams.topMargin = dp(18);
+        closeParams.rightMargin = dp(18);
+        fullscreenRoot.addView(close, closeParams);
+
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                         | View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -767,27 +798,25 @@ public class MainActivity extends Activity {
                         | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
         );
 
-        playerView.setUseController(true);
-        setContentView(playerView);
-        playerView.setLayoutParams(new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-        ));
+        setContentView(fullscreenRoot);
     }
 
     private void exitFullscreen() {
         if (!isFullscreen) return;
 
         isFullscreen = false;
-        setContentView(rootView);
 
-        ViewGroup parent = (ViewGroup) playerView.getParent();
-        if (parent != null) parent.removeView(playerView);
-        playerCard.addView(playerView, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, playerNormalHeight));
+        if (fullscreenPlayerView != null) {
+            fullscreenPlayerView.setPlayer(null);
+            fullscreenPlayerView = null;
+        }
 
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+
+        setContentView(rootView);
+        playerView.setPlayer(player);
         playerView.setUseController(true);
+        rootView.requestApplyInsets();
     }
 
     @Override
@@ -1017,6 +1046,11 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (fullscreenPlayerView != null) {
+            fullscreenPlayerView.setPlayer(null);
+            fullscreenPlayerView = null;
+        }
+        if (playerView != null) playerView.setPlayer(null);
         if (channelAdapter != null) channelAdapter.shutdown();
         m3uRepository.shutdown();
         epgRepository.shutdown();
