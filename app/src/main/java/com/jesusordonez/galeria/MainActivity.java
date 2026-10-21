@@ -86,6 +86,8 @@ public class MainActivity extends Activity {
     private ListView listView;
     private LinearLayout bottomNav;
     private LinearLayout playerCard;
+    private LinearLayout rootView;
+    private boolean isFullscreen = false;
 
     private final M3uRepository m3uRepository = new M3uRepository();
     private final EpgRepository epgRepository = new EpgRepository();
@@ -139,6 +141,7 @@ public class MainActivity extends Activity {
 
     private void buildUi() {
         LinearLayout root = new LinearLayout(this);
+        rootView = root;
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackground(appBackground());
 
@@ -351,10 +354,14 @@ public class MainActivity extends Activity {
         TextView pip = actionButton("▣", "Mini TV");
         pip.setOnClickListener(v -> enterPip());
 
+        TextView fullscreen = actionButton("⛶", "Pantalla");
+        fullscreen.setOnClickListener(v -> enterFullscreen());
+
         TextView refresh = actionButton("↻", "Actualizar");
         refresh.setOnClickListener(v -> loadScope(currentScope));
 
         actions.addView(favoriteAction, actionLayout());
+        actions.addView(fullscreen, actionLayout());
         actions.addView(pip, actionLayout());
         actions.addView(refresh, actionLayout());
         header.addView(actions);
@@ -502,12 +509,13 @@ public class MainActivity extends Activity {
         m3uRepository.load(SCOPE_URLS[position], new M3uRepository.Callback() {
             @Override
             public void onLoaded(List<Channel> channels) {
+                List<Channel> prepared = prioritizeChannels(channels, selectedPosition);
                 runOnUiThread(() -> {
                     if (currentScope != selectedPosition) return;
                     allChannels.clear();
-                    allChannels.addAll(channels);
+                    allChannels.addAll(prepared);
                     rebuildCategories();
-                    buildFeatured(channels);
+                    buildFeatured(prepared);
                     applyFilter();
                     progressBar.setVisibility(View.GONE);
                 });
@@ -523,6 +531,36 @@ public class MainActivity extends Activity {
                 });
             }
         });
+    }
+
+    private List<Channel> prioritizeChannels(List<Channel> source, int scope) {
+        List<Channel> result = new ArrayList<>(source);
+        int starsIndex = -1;
+        for (int i = 0; i < result.size(); i++) {
+            Channel channel = result.get(i);
+            String name = channel.name.toLowerCase(Locale.ROOT);
+            String id = channel.id.toLowerCase(Locale.ROOT);
+            if (name.contains("las estrellas") || id.contains("lasestrellas.mx")) {
+                starsIndex = i;
+                break;
+            }
+        }
+
+        if (starsIndex >= 0) {
+            Channel stars = result.remove(starsIndex);
+            result.add(0, stars);
+        } else if (scope == 0) {
+            result.add(0, new Channel(
+                    "LasEstrellas.mx@SD",
+                    "Las Estrellas",
+                    "",
+                    "México",
+                    "https://channel01-onlymex.akamaized.net/hls/live/2022749/event01/index.m3u8",
+                    "",
+                    ""
+            ));
+        }
+        return result;
     }
 
     private void rebuildCategories() {
@@ -709,6 +747,58 @@ public class MainActivity extends Activity {
                 && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
     }
 
+    private void enterFullscreen() {
+        if (isFullscreen) return;
+        if (selectedChannel == null) {
+            Toast.makeText(this, "Primero reproduce un canal.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ViewGroup parent = (ViewGroup) playerView.getParent();
+        if (parent != null) parent.removeView(playerView);
+
+        isFullscreen = true;
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
+
+        playerView.setUseController(true);
+        setContentView(playerView);
+        playerView.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+    }
+
+    private void exitFullscreen() {
+        if (!isFullscreen) return;
+
+        isFullscreen = false;
+        setContentView(rootView);
+
+        ViewGroup parent = (ViewGroup) playerView.getParent();
+        if (parent != null) parent.removeView(playerView);
+        playerCard.addView(playerView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, playerNormalHeight));
+
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        playerView.setUseController(true);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isFullscreen) {
+            exitFullscreen();
+            return;
+        }
+        super.onBackPressed();
+    }
+
     private void enterPip() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             Toast.makeText(this, "Mini TV requiere Android 8 o superior.",
@@ -731,7 +821,7 @@ public class MainActivity extends Activity {
         super.onUserLeaveHint();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 && selectedChannel != null && player != null && player.isPlaying()
-                && !isInPictureInPictureMode()) {
+                && !isInPictureInPictureMode() && !isFullscreen) {
             enterPip();
         }
     }
